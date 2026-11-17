@@ -1954,3 +1954,18 @@
 .menu-i.on::after { content: " ✓"; }
 /* Generate Brief: both labels (with their icons) centred in the shared slot at every size */
 .cta-swap { justify-items: center; }
+/* restore offer: a small floating card in the app's style, centred at the top */
+.banner { position: fixed; top: max(16px, env(safe-area-inset-top)); left: 50%; z-index: 120; width: max-content; max-width: calc(100vw - 32px);
+  display: flex; align-items: center; gap: 16px; flex-wrap: nowrap; padding: 8px 8px 8px 16px;
+  background: #FDFDFB; border: 1px solid #E4E3DE; border-bottom: 1px solid #E4E3DE; border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(40, 38, 35, 0.05), 0 14px 32px -16px rgba(40, 38, 35, 0.3);
+  font-family: var(--sans); font-size: 14px; color: var(--ink); }
+.banner-t { white-space: nowrap; }
+.banner-acts { display: inline-flex; align-items: center; gap: 4px; }
+.banner-b, .banner-b.strong { height: 32px; padding: 0 12px; border: none; border-radius: 999px; background: none; cursor: pointer;
+  font: inherit; font-size: 13.5px; font-weight: 450; color: var(--soft, #6F6D6A); text-decoration: none;
+  transition: background-color 0.2s var(--ease), color 0.2s var(--ease); }
+.banner-b:hover { background: #F4F3EF; color: var(--ink); }
+.banner-b.strong { background: var(--ink); color: #FDFDFB; font-weight: 500; }
+.banner-b.strong:hover { background: #12110F; color: #FDFDFB; }
+@media (max-width: 600px) { .banner { flex-wrap: wrap; gap: 8px; } .banner-t { white-space: normal; } }

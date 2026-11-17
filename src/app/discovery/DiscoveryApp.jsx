@@ -196,6 +196,12 @@ export default function DiscoveryApp() {
     setRestore(null);
     autosaveOn.current = true;
   };
+  /* the restore offer slides away by itself after 7 seconds (the saved session is left untouched) */
+  useEffect(() => {
+    if (!restore) return undefined;
+    const tm = setTimeout(() => setRestore(null), 7000);
+    return () => clearTimeout(tm);
+  }, [restore]);
   const startFresh = () => { lsDel(); setRestore(null); autosaveOn.current = true; };
 
   const newSession = () => {
@@ -451,14 +457,19 @@ export default function DiscoveryApp() {
       <MotionConfig reducedMotion="user">
       <div className="root canvas">
         <a className="skip" href="#main">Skip to content</a>
-        {restore && (
-          <div className="banner no-print" role="region" aria-label="Restore session">
-            <span>Unsaved session from {relTime(restore.savedAt)} found.</span>
-            <button type="button" className="banner-b strong" onClick={doRestore}>Restore</button>
-            <span aria-hidden="true">{"·"}</span>
-            <button type="button" className="banner-b" onClick={startFresh}>Start fresh</button>
-          </div>
-        )}
+        <AnimatePresence>
+          {restore && (
+            <motion.div key="restore" className="banner no-print" role="region" aria-label="Restore session"
+              initial={{ opacity: 0, y: -12, x: "-50%" }} animate={{ opacity: 1, y: 0, x: "-50%" }} exit={{ opacity: 0, y: -12, x: "-50%" }}
+              transition={{ duration: 0.4, ease: [0.32, 0.72, 0, 1] }}>
+              <span className="banner-t">Unsaved session from {relTime(restore.savedAt)} found.</span>
+              <span className="banner-acts">
+                <button type="button" className="banner-b" onClick={startFresh}>Start fresh</button>
+                <button type="button" className="banner-b strong" onClick={doRestore}>Restore</button>
+              </span>
+            </motion.div>
+          )}
+        </AnimatePresence>
         {(
           <>
             <div className="frame">
