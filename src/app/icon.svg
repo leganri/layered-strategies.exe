@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Layered Strategies: three stacked layers, the front one in the brand orange -->
+  <rect width="64" height="64" rx="14" fill="#FDFDFB"/>
+  <rect x="16" y="10" width="32" height="22" rx="6" fill="#282623" opacity="0.28"/>
+  <rect x="13" y="19" width="38" height="24" rx="7" fill="#282623" opacity="0.55"/>
+  <rect x="10" y="29" width="44" height="26" rx="8" fill="#FF5E1A"/>
+</svg>
