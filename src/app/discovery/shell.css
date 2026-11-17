@@ -1805,19 +1805,19 @@
   .ms-card, .ms-card:first-child, .ms-card.on { background: var(--sc); --f0: 34px; --f1: 260px; }
   .ms-card::before { content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 0;
     background: linear-gradient(180deg, transparent 0,
-      color-mix(in srgb, var(--card) 0.0%, transparent) calc(var(--f0) + (var(--f1) - var(--f0)) * 0.000),
-      color-mix(in srgb, var(--card) 2.0%, transparent) calc(var(--f0) + (var(--f1) - var(--f0)) * 0.083),
-      color-mix(in srgb, var(--card) 7.4%, transparent) calc(var(--f0) + (var(--f1) - var(--f0)) * 0.167),
-      color-mix(in srgb, var(--card) 15.6%, transparent) calc(var(--f0) + (var(--f1) - var(--f0)) * 0.250),
-      color-mix(in srgb, var(--card) 25.9%, transparent) calc(var(--f0) + (var(--f1) - var(--f0)) * 0.333),
-      color-mix(in srgb, var(--card) 37.6%, transparent) calc(var(--f0) + (var(--f1) - var(--f0)) * 0.417),
-      color-mix(in srgb, var(--card) 50.0%, transparent) calc(var(--f0) + (var(--f1) - var(--f0)) * 0.500),
-      color-mix(in srgb, var(--card) 62.4%, transparent) calc(var(--f0) + (var(--f1) - var(--f0)) * 0.583),
-      color-mix(in srgb, var(--card) 74.1%, transparent) calc(var(--f0) + (var(--f1) - var(--f0)) * 0.667),
-      color-mix(in srgb, var(--card) 84.4%, transparent) calc(var(--f0) + (var(--f1) - var(--f0)) * 0.750),
-      color-mix(in srgb, var(--card) 92.6%, transparent) calc(var(--f0) + (var(--f1) - var(--f0)) * 0.833),
-      color-mix(in srgb, var(--card) 98.0%, transparent) calc(var(--f0) + (var(--f1) - var(--f0)) * 0.917),
-      color-mix(in srgb, var(--card) 100.0%, transparent) calc(var(--f0) + (var(--f1) - var(--f0)) * 1.000),
+      rgba(var(--card-rgb), 0.000) calc(var(--f0) + (var(--f1) - var(--f0)) * 0.000),
+      rgba(var(--card-rgb), 0.020) calc(var(--f0) + (var(--f1) - var(--f0)) * 0.083),
+      rgba(var(--card-rgb), 0.074) calc(var(--f0) + (var(--f1) - var(--f0)) * 0.167),
+      rgba(var(--card-rgb), 0.156) calc(var(--f0) + (var(--f1) - var(--f0)) * 0.250),
+      rgba(var(--card-rgb), 0.259) calc(var(--f0) + (var(--f1) - var(--f0)) * 0.333),
+      rgba(var(--card-rgb), 0.376) calc(var(--f0) + (var(--f1) - var(--f0)) * 0.417),
+      rgba(var(--card-rgb), 0.500) calc(var(--f0) + (var(--f1) - var(--f0)) * 0.500),
+      rgba(var(--card-rgb), 0.624) calc(var(--f0) + (var(--f1) - var(--f0)) * 0.583),
+      rgba(var(--card-rgb), 0.741) calc(var(--f0) + (var(--f1) - var(--f0)) * 0.667),
+      rgba(var(--card-rgb), 0.844) calc(var(--f0) + (var(--f1) - var(--f0)) * 0.750),
+      rgba(var(--card-rgb), 0.926) calc(var(--f0) + (var(--f1) - var(--f0)) * 0.833),
+      rgba(var(--card-rgb), 0.980) calc(var(--f0) + (var(--f1) - var(--f0)) * 0.917),
+      rgba(var(--card-rgb), 1.000) calc(var(--f0) + (var(--f1) - var(--f0)) * 1.000),
       var(--card) 100%);
     transform: translateY(70px); transition: transform 0.36s cubic-bezier(0.32, 0.72, 0, 1); }
   .ms-card.on::before { transform: translateY(0); transition-delay: 0.06s; }
@@ -1837,7 +1837,7 @@
 }
 /* phones: a slightly darker card grey, and a fine grain over the colour band and its fade */
 @media (max-width: 880px) {
-  .mstack { --card: #ECEBE6; }
+  .mstack { --card: #ECEBE6; --card-rgb: 236, 235, 230; }
   .ms-card > .ms-grain { position: absolute; inset: 0; z-index: 0; pointer-events: none; border-radius: inherit; opacity: 0.5;
     background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.16  0 0 0 0 0.15  0 0 0 0 0.14  0 0 0 0.55 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
     background-size: 180px 180px; mix-blend-mode: multiply;

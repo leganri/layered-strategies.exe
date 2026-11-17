@@ -246,13 +246,22 @@ export default function DiscoveryApp() {
   useEffect(() => {
     if (process.env.NODE_ENV !== "production" === false) return undefined;
     let timer = 0, inZone = false;
-    const onMove = (e) => {
-      const near = e.clientY > window.innerHeight - 72;
+    const zone = (near) => {
       if (near && !inZone) { inZone = true; clearTimeout(timer); timer = setTimeout(() => setDevShow(true), 1000); }
       else if (!near && inZone) { inZone = false; clearTimeout(timer); setDevShow(false); }
     };
+    const onMove = (e) => zone(e.clientY > window.innerHeight - 72);
+    /* macOS: a flick toward the Dock leaves the window before any move lands in the zone,
+       so leaving through the bottom edge counts as resting there */
+    const onOut = (e) => {
+      if (e.relatedTarget) return;
+      const w = window.innerWidth, h = window.innerHeight;
+      const toBottom = h - e.clientY;
+      zone(toBottom < e.clientY && toBottom < e.clientX && toBottom < w - e.clientX);
+    };
     window.addEventListener("mousemove", onMove, { passive: true });
-    return () => { window.removeEventListener("mousemove", onMove); clearTimeout(timer); };
+    document.addEventListener("mouseout", onOut);
+    return () => { window.removeEventListener("mousemove", onMove); document.removeEventListener("mouseout", onOut); clearTimeout(timer); };
   }, []);
   const unlockAll = true; // nothing is locked: people can explore any section in any order
   const comp = useMemo(() => SECTIONS.map((x) => (testDone ? { filled: x.core.length, total: x.core.length, done: true } : completion(data, x))), [data, testDone]);
