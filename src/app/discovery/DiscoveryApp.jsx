@@ -502,14 +502,10 @@ export default function DiscoveryApp() {
                         exit={{ opacity: 0, y: -4, scale: 0.98 }} transition={{ duration: 0.24, ease: [0.32, 0.72, 0, 1] }}>
                         <button type="button" role="menuitem" className="menu-i" autoFocus onClick={() => { setMenu(false); saveSession(); }}>Save</button>
                         <button type="button" role="menuitem" className="menu-i" onClick={() => { setMenu(false); if (fileRef.current) fileRef.current.click(); }}>Load</button>
-                        {process.env.NODE_ENV !== "production" && (
-                          <>
-                            <span className="menu-sep" aria-hidden="true" />
-                            <span className="menu-k">Preview</span>
-                            <button type="button" role="menuitemcheckbox" aria-checked={testDone} className={"menu-i" + (testDone ? " on" : "")} onClick={() => { setMenu(false); setTestDone((v) => !v); }}>All complete</button>
-                            <button type="button" role="menuitem" className="menu-i" onClick={() => { setMenu(false); loadSample(); }}>Sample brief</button>
-                          </>
-                        )}
+                        <span className="menu-sep" aria-hidden="true" />
+                        <span className="menu-k">Preview</span>
+                        <button type="button" role="menuitemcheckbox" aria-checked={testDone} className={"menu-i" + (testDone ? " on" : "")} onClick={() => { setMenu(false); setTestDone((v) => !v); }}>All complete</button>
+                        <button type="button" role="menuitem" className="menu-i" onClick={() => { setMenu(false); loadSample(); }}>Sample brief</button>
                       </motion.div>
                     )}
                   </AnimatePresence>
