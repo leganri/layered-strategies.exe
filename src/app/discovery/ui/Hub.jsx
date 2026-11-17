@@ -1,7 +1,7 @@
 "use client";
 /* Home: every section as a card, sized to fit the window. Sections unlock in order. */
 import React, { useEffect, useRef, useState } from "react";
-import { motion } from "motion/react";
+import { motion, animate, useMotionValue, useMotionValueEvent, useTransform } from "motion/react";
 import { SECTIONS } from "../schema";
 import { Art, Check, Lock, EASE, SECTION_COLORS } from "./SectionArt";
 
@@ -75,9 +75,65 @@ const MS_EDGES = 3;    // at most this many edges show at either end
 const MS_TAB = 34;     // visible height of a title tab below the open card
 const MS_TABS = 4;     // titles shown below the open card
 const MS_OV = 14;      // each tab tucks this far under the card in front of it
-function MobileStack({ comp, reach, target, resume, onOpen, onLocked, onBrief }) {
+const MS_DRAG = 150;   // finger travel (px) that moves the deck by one card
+const MS_SPRING = { type: "spring", stiffness: 260, damping: 32, mass: 0.9 };
+
+/* Where a card sits, as a smooth function of d = (its index - the deck position).
+   At whole numbers this is exactly the resting layout; in between it glides, so the deck can follow a finger. */
+function deckY(d, A) {
+  const T1 = MS_TOP + A - MS_OV;                 // first title tab under the open card
+  const lastTab = T1 + (MS_TABS - 1) * MS_TAB;
+  if (d <= 0) return MS_TOP - Math.min(-d, MS_EDGES) * MS_EDGE;
+  if (d <= 1) return MS_TOP + (T1 - MS_TOP) * d;
+  if (d <= MS_TABS) return T1 + (d - 1) * MS_TAB;
+  if (d <= MS_TABS + 1) return lastTab + (d - MS_TABS) * MS_TAB;
+  return lastTab + MS_TAB + Math.min(d - MS_TABS - 1, MS_EDGES - 1) * MS_EDGE;
+}
+const deckScale = (d) => (d < 0 ? 1 - Math.min(-d, MS_EDGES) * 0.03 : 1);
+const deckOpacity = (d) => (d < -MS_EDGES ? Math.max(0, 1 - (-d - MS_EDGES)) : d > MS_TABS + MS_EDGES ? Math.max(0, 1 - (d - MS_TABS - MS_EDGES)) : 1);
+
+/* One card. It moves with GPU transforms only (translate + scale), never layout, so dragging stays smooth. */
+function MsCard({ s, i, pos, A, act, c, locked, resume, onOpen, onLocked, onGo }) {
+  const y = useTransform(pos, (p) => deckY(i - p, A));
+  const scale = useTransform(pos, (p) => deckScale(i - p));
+  const opacity = useTransform(pos, (p) => deckOpacity(i - p));
+  const on = i === act;
+  const state = locked ? "locked" : c.done ? "done" : "open";
+  const open = () => (locked ? onLocked(s.id) : onOpen(s.id));
+  const cta = c.done || c.filled > 0 ? "Continue" : "Start";
+  const titled = on || (i > act && i - act <= MS_TABS);
+  return (
+    <motion.div className={"ms-card " + state + (on ? " on" : "") + (titled ? "" : " edge") + (onDark(SECTION_COLORS[s.id]) ? " dark" : "")}
+      style={{ y, scale, opacity, height: A, zIndex: i + 1, "--sc": BAND[s.id] }} aria-hidden={!titled || undefined}>
+      <span className="ms-grain" aria-hidden="true" />
+      <button type="button" className="ms-head" tabIndex={titled ? 0 : -1} aria-expanded={on}
+        onClick={() => (on ? open() : onGo(i))}
+        aria-label={s.title + (locked ? ", locked" : c.done ? ", complete" : ", " + c.filled + " of " + c.total + " answered") + (on ? "" : ", show")}>
+        <span className="ms-t">{s.title}</span>
+        <span className="ms-s">
+          {!on && resume && resume.id === s.id ? <span className="ms-pill">Continue</span> : locked ? <span className="hc-lock"><Lock /></span> : c.done ? (on ? <span className="hc-slot ms-done"><Check size={28} animate={false} /></span> : <Check size={20} animate={false} />) : on ? <Ring filled={c.filled} total={c.total} /> : null}
+        </span>
+      </button>
+      {on && (
+        <motion.div className="ms-body" style={{ height: A - 87 - MS_OV }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={tr(0.3, 0.05)}>
+          <button type="button" className="ms-art" onClick={open} tabIndex={-1} aria-hidden="true">
+            <Art id={s.id} state={state} standalone autoplay tint={s.id === "05" ? BAND["05"] : undefined} accentOutline={s.id === "05" ? "rgba(40, 38, 35, 0.35)" : undefined} />
+          </button>
+          <button type="button" className="ms-foot" onClick={open}>
+            <span className="ms-cta">{cta}</span>
+          </button>
+        </motion.div>
+      )}
+    </motion.div>
+  );
+}
+
+function MobileStack({ comp, reach, target, resume, onOpen, onLocked }) {
   const last = SECTIONS.length - 1;
-  const [act, setAct] = useState(Math.max(0, target));
+  const start0 = Math.max(0, target);
+  const pos = useMotionValue(start0);            // the deck position: which card is open, with fractions mid-drag
+  const [act, setAct] = useState(start0);
+  useMotionValueEvent(pos, "change", (v) => { const r = Math.max(0, Math.min(last, Math.round(v))); setAct((a) => (a === r ? a : r)); });
   const [h, setH] = useState(0);
   const box = useRef(null);
   useEffect(() => {
@@ -89,80 +145,78 @@ function MobileStack({ comp, reach, target, resume, onOpen, onLocked, onBrief })
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
-  const go = (i) => setAct(Math.max(0, Math.min(last, i)));
-  const start = useRef(null);
-  const cool = useRef(0);
-  const step = (dir) => { const now = Date.now(); if (now < cool.current) return; cool.current = now + 420; setAct((a) => Math.max(0, Math.min(last, a + dir))); };
-  const onTouchStart = (e) => { start.current = e.touches[0].clientY; };
-  const onTouchEnd = (e) => {
-    if (start.current == null) return;
-    const dy = e.changedTouches[0].clientY - start.current;
-    start.current = null;
-    if (Math.abs(dy) > 36) step(dy < 0 ? 1 : -1);
+
+  const settle = (to, velocity = 0) => animate(pos, Math.max(0, Math.min(last, to)), { ...MS_SPRING, velocity });
+  const go = (i) => settle(i);
+
+  /* swipe: the deck follows the finger (pointer events, captured once the finger moves, so nothing is lost
+     when the card under it changes), but never more than one card away. On release it moves exactly one card
+     in the swipe's direction if the swipe was meant (far enough, or a quick flick), else springs back. */
+  const drag = useRef(null);
+  const swallowClick = useRef(false);
+  const onPointerDown = (e) => {
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    pos.stop();
+    const p0 = Math.round(pos.get());
+    drag.current = { id: e.pointerId, y0: e.clientY, p0, moved: false, captured: false, samples: [[performance.now(), e.clientY]] };
   };
-  const onWheel = (e) => { if (Math.abs(e.deltaY) > 18) step(e.deltaY > 0 ? 1 : -1); };
+  const onPointerMove = (e) => {
+    const d = drag.current; if (!d || e.pointerId !== d.id) return;
+    const dy = e.clientY - d.y0;
+    if (!d.moved && Math.abs(dy) > 6) {
+      d.moved = true;
+      try { e.currentTarget.setPointerCapture(e.pointerId); d.captured = true; } catch (er) {}
+    }
+    if (!d.moved) return;
+    let off = -dy / MS_DRAG;                       // in cards
+    off = Math.max(-1, Math.min(1, off));          // one card at a time
+    let p = d.p0 + off;
+    if (p < 0) p *= 0.35;                          // rubber-band past either end
+    else if (p > last) p = last + (p - last) * 0.35;
+    pos.set(p);
+    d.samples.push([performance.now(), e.clientY]);
+    if (d.samples.length > 6) d.samples.shift();
+  };
+  const onPointerUp = (e) => {
+    const d = drag.current; if (!d || e.pointerId !== d.id) return;
+    drag.current = null;
+    if (!d.moved) return;                          // a tap: let the buttons handle it
+    swallowClick.current = true;
+    setTimeout(() => { swallowClick.current = false; }, 350);
+    const sm = d.samples, a0 = sm[0], b0 = sm[sm.length - 1];
+    const fresh = performance.now() - b0[0] < 120;
+    const vPx = fresh ? (b0[1] - a0[1]) / Math.max(1, b0[0] - a0[0]) : 0;   // px per ms, + is downward
+    const dy = e.clientY - d.y0;
+    let dir = 0;
+    if (dy < -MS_DRAG * 0.25 || vPx < -0.35) dir = 1;       // swiped up: next card
+    else if (dy > MS_DRAG * 0.25 || vPx > 0.35) dir = -1;   // swiped down: previous card
+    const to = Math.max(0, Math.min(last, d.p0 + dir));
+    animate(pos, to, { ...MS_SPRING, velocity: (-vPx * 1000) / MS_DRAG });
+  };
+  const onClickCapture = (e) => { if (swallowClick.current) { swallowClick.current = false; e.stopPropagation(); e.preventDefault(); } };
+
+  /* mouse wheel / trackpad: one card per notch, on the same spring */
+  const wheelAt = useRef(0);
+  const onWheel = (e) => {
+    if (Math.abs(e.deltaY) < 12) return;
+    const now = performance.now(); if (now - wheelAt.current < 260) return; wheelAt.current = now;
+    settle(Math.round(pos.get()) + (e.deltaY > 0 ? 1 : -1));
+  };
   const onKey = (e) => {
     if (e.key === "ArrowDown") { e.preventDefault(); go(act + 1); }
     else if (e.key === "ArrowUp") { e.preventDefault(); go(act - 1); }
   };
 
-  /* fixed bands: the top edge band, the open card, the titles + bottom edges */
   const bottomBand = MS_TABS * MS_TAB + MS_EDGES * MS_EDGE;
   const A = Math.max(180, h - MS_TOP - bottomBand); // the open card's height, the same for every card
-  const place = (i) => {
-    if (i === act) return { top: MS_TOP, scale: 1, z: 100, show: true };
-    if (i < act) {
-      const d = Math.min(act - i, MS_EDGES + 1);
-      return { top: MS_TOP - Math.min(d, MS_EDGES) * MS_EDGE, scale: 1 - Math.min(d, MS_EDGES) * 0.03, z: 100 - (act - i), show: act - i <= MS_EDGES };
-    }
-    const k = i - act;
-    if (k <= MS_TABS) return { top: MS_TOP + A - MS_OV + (k - 1) * MS_TAB, scale: 1, z: 100 + k, show: true };
-    const e = Math.min(k - MS_TABS, MS_EDGES);
-    const lastTab = MS_TOP + A - MS_OV + (MS_TABS - 1) * MS_TAB;
-    return { top: lastTab + MS_TAB + (e - 1) * MS_EDGE, scale: 1, z: 100 + k, show: k - MS_TABS <= MS_EDGES };
-  };
 
   return (
-    <>
-    <div className="mstack" ref={box} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd} onWheel={onWheel} onKeyDown={onKey}>
-      {h > 0 && SECTIONS.map((s, i) => {
-        const c = comp[i];
-        const locked = i > reach;
-        const on = i === act;
-        const pos = place(i);
-        const state = locked ? "locked" : c.done ? "done" : "open";
-        const open = () => (locked ? onLocked(s.id) : onOpen(s.id));
-        const cta = c.done || c.filled > 0 ? "Continue" : "Start";
-        const titled = on || (i > act && i - act <= MS_TABS);
-        return (
-          <motion.div key={s.id} className={"ms-card " + state + (on ? " on" : "") + (titled ? "" : " edge") + (onDark(SECTION_COLORS[s.id]) ? " dark" : "")}
-            initial={false}
-            animate={{ top: pos.top, scale: pos.scale, opacity: pos.show ? 1 : 0 }}
-            transition={MS_EASE}
-            style={{ height: A, zIndex: pos.z, pointerEvents: pos.show ? "auto" : "none", "--sc": BAND[s.id] }}
-            aria-hidden={!titled || undefined}>
-            <span className="ms-grain" aria-hidden="true" />
-            <button type="button" className="ms-head" tabIndex={titled ? 0 : -1} aria-expanded={on}
-              onClick={() => (on ? open() : go(i))}
-              aria-label={s.title + (locked ? ", locked" : c.done ? ", complete" : ", " + c.filled + " of " + c.total + " answered") + (on ? "" : ", show")}>
-              <span className="ms-t">{s.title}</span>
-              <span className="ms-s">
-                {!on && resume && resume.id === s.id ? <span className="ms-pill">Continue</span> : locked ? <span className="hc-lock"><Lock /></span> : c.done ? (on ? <span className="hc-slot ms-done"><Check size={28} animate={false} /></span> : <Check size={20} animate={false} />) : on ? <Ring filled={c.filled} total={c.total} /> : null}
-              </span>
-            </button>
-            {on && (
-              <motion.div className="ms-body" style={{ height: A - 87 - MS_OV }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={tr(0.4, 0.15)}>
-                <button type="button" className="ms-art" onClick={open} tabIndex={-1} aria-hidden="true">
-                  <Art id={s.id} state={state} standalone autoplay tint={s.id === "05" ? BAND["05"] : undefined} accentOutline={s.id === "05" ? "rgba(40, 38, 35, 0.35)" : undefined} />
-                </button>
-                <button type="button" className="ms-foot" onClick={open}>
-                  <span className="ms-cta">{cta}</span>
-                </button>
-              </motion.div>
-            )}
-          </motion.div>
-        );
-      })}
+    <div className="mstack" ref={box} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp}
+      onClickCapture={onClickCapture} onWheel={onWheel} onKeyDown={onKey}>
+      {h > 0 && SECTIONS.map((s, i) => (
+        <MsCard key={s.id} s={s} i={i} pos={pos} A={A} act={act} c={comp[i]} locked={i > reach} resume={resume}
+          onOpen={onOpen} onLocked={onLocked} onGo={go} />
+      ))}
       {/* written on the background beneath every card: only seen once the deck runs out (the last section open) */}
       {h > 0 && (
         <div className="ms-note" style={{ top: MS_TOP + A, height: Math.max(0, h - MS_TOP - A) }}>
@@ -171,7 +225,6 @@ function MobileStack({ comp, reach, target, resume, onOpen, onLocked, onBrief })
         </div>
       )}
     </div>
-    </>
   );
 }
 

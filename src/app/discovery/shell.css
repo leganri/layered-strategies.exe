@@ -1969,3 +1969,17 @@
 .banner-b.strong { background: var(--ink); color: #FDFDFB; font-weight: 500; }
 .banner-b.strong:hover { background: #12110F; color: #FDFDFB; }
 @media (max-width: 600px) { .banner { flex-wrap: wrap; gap: 8px; } .banner-t { white-space: normal; } }
+/* phones: message on the left, buttons on the right, on one row */
+@media (max-width: 600px) {
+  .banner { flex-wrap: nowrap; justify-content: space-between; gap: 10px; width: calc(100vw - 32px); padding: 8px 8px 8px 14px; }
+  .banner-t { flex: 1; min-width: 0; white-space: normal; font-size: 13.5px; line-height: 1.35; }
+  .banner-acts { flex-shrink: 0; }
+  .banner-b, .banner-b.strong { padding: 0 11px; font-size: 13px; }
+}
+/* phones: the deck owns vertical swipes and follows the finger; cards move on their own GPU layers */
+@media (max-width: 880px) {
+  .mstack { touch-action: none; -webkit-user-select: none; user-select: none; }
+  .ms-card { top: 0; will-change: transform; backface-visibility: hidden; }
+}
+/* desktop: no progress line along the bottom of the current card (the ring shows progress) */
+.hc-line { display: none !important; }
