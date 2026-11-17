@@ -241,28 +241,6 @@ export default function DiscoveryApp() {
   const openBriefRef = useRef(() => {});
   const [testDone, setTestDone] = useState(false);
   const loadSample = () => { setData(normalize(migrate(JSON.parse(JSON.stringify(SAMPLE))))); openBriefRef.current(); };
-  /* desktop: the dev panel stays hidden until the cursor rests near the bottom edge for a second */
-  const [devShow, setDevShow] = useState(false);
-  useEffect(() => {
-    if (process.env.NODE_ENV !== "production" === false) return undefined;
-    let timer = 0, inZone = false;
-    const zone = (near) => {
-      if (near && !inZone) { inZone = true; clearTimeout(timer); timer = setTimeout(() => setDevShow(true), 1000); }
-      else if (!near && inZone) { inZone = false; clearTimeout(timer); setDevShow(false); }
-    };
-    const onMove = (e) => zone(e.clientY > window.innerHeight - 72);
-    /* macOS: a flick toward the Dock leaves the window before any move lands in the zone,
-       so leaving through the bottom edge counts as resting there */
-    const onOut = (e) => {
-      if (e.relatedTarget) return;
-      const w = window.innerWidth, h = window.innerHeight;
-      const toBottom = h - e.clientY;
-      zone(toBottom < e.clientY && toBottom < e.clientX && toBottom < w - e.clientX);
-    };
-    window.addEventListener("mousemove", onMove, { passive: true });
-    document.addEventListener("mouseout", onOut);
-    return () => { window.removeEventListener("mousemove", onMove); document.removeEventListener("mouseout", onOut); clearTimeout(timer); };
-  }, []);
   const unlockAll = true; // nothing is locked: people can explore any section in any order
   const comp = useMemo(() => SECTIONS.map((x) => (testDone ? { filled: x.core.length, total: x.core.length, done: true } : completion(data, x))), [data, testDone]);
   const doneCount = comp.filter((c) => c.done).length;
@@ -596,13 +574,11 @@ export default function DiscoveryApp() {
             </AnimatePresence>
             </div>
             </div>
-            {process.env.NODE_ENV !== "production" && (
-              <div className={"tester no-print" + (devShow ? " show" : "")} role="group" aria-label="Preview controls (development only)">
-                <span className="tester-l">Preview</span>
-                <button type="button" className={"tester-b" + (testDone ? " on" : "")} aria-pressed={testDone} onClick={() => setTestDone((v) => !v)}>All complete</button>
-                <button type="button" className="tester-b" onClick={loadSample}>Sample brief</button>
-              </div>
-            )}
+            <div className="tester no-print" role="group" aria-label="Preview controls">
+              <span className="tester-l">Preview</span>
+              <button type="button" className={"tester-b" + (testDone ? " on" : "")} aria-pressed={testDone} onClick={() => setTestDone((v) => !v)}>All complete</button>
+              <button type="button" className="tester-b" onClick={loadSample}>Sample brief</button>
+            </div>
             <CompletePill celebrate={celebrate} comp={comp} onNext={(id) => setView(id)} onBrief={openBrief} onClose={closeCelebrate} />
           </>
         )}

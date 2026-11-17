@@ -1942,11 +1942,9 @@
 }
 /* phones: the note runs the full width of the deck, inside the card margins */
 @media (max-width: 880px) { .ms-note { padding: 0 24px; } .ms-note-t { max-width: none; width: 100%; text-wrap: balance; } }
-/* dev panel: desktop — centred at the bottom, tucked away until the cursor rests near the bottom edge;
+/* dev panel: desktop — always shown, centred at the bottom;
    phones — not shown (its buttons live in the ⋯ menu) */
-.tester { left: 50%; bottom: 16px; transform: translate(-50%, calc(100% + 24px)); opacity: 0; pointer-events: none;
-  transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.3s ease; }
-.tester.show { transform: translate(-50%, 0); opacity: 1; pointer-events: auto; }
+.tester { left: 50%; bottom: 16px; transform: translateX(-50%); }
 @media (max-width: 880px) { .tester, .tester.show { display: none; } }
 .menu-sep { display: block; height: 1px; margin: 4px 6px; background: #E4E3DE; }
 .menu-k { display: block; padding: 6px 10px 2px; font-size: 11.5px; color: #A9A7A2; }
