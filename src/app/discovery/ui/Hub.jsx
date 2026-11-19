@@ -263,7 +263,23 @@ function MobileStack({ comp, reach, target, resume, onOpen, onLocked }) {
   );
 }
 
+/* Touch screens wide enough for the grid (tablets, a phone turned sideways) have no hover, so the active
+   card's icon would never play. There it plays by itself, the same as a finished card. */
+function useNoHover() {
+  const [on, setOn] = useState(false);
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.matchMedia) return undefined;
+    const mq = window.matchMedia("(hover: none) and (pointer: coarse)");
+    const set = () => setOn(mq.matches);
+    set();
+    mq.addEventListener ? mq.addEventListener("change", set) : mq.addListener(set);
+    return () => (mq.removeEventListener ? mq.removeEventListener("change", set) : mq.removeListener(set));
+  }, []);
+  return on;
+}
+
 export default function Hub({ comp, reach, lastSec, onOpen, onLocked, onBrief }) {
+  const noHover = useNoHover();
   const firstOpen = comp.findIndex((c) => !c.done);
   /* exactly one call to action: the first section in progress, else the first not started */
   const inProgress = comp.findIndex((c) => !c.done && c.filled > 0);
@@ -280,10 +296,11 @@ export default function Hub({ comp, reach, lastSec, onOpen, onLocked, onBrief })
           const current = !locked && i === target;
           const state = locked ? "locked" : c.done ? "done" : "open";
           const prev = SECTIONS[i - 1];
+          const played = !locked && (c.done || (current && noHover));
           return (
             <motion.div key={s.id} variants={itemV} className="hub-cell">
               <motion.button type="button" className={"hcard " + state + (current ? " current" : "")}
-                variants={c.done && !locked ? cardVDone : cardV} initial="rest" animate={c.done && !locked ? "hover" : "rest"} whileHover={current ? "hover" : undefined} whileFocus={current ? "hover" : undefined}
+                variants={played ? cardVDone : cardV} initial="rest" animate={played ? "hover" : "rest"} whileHover={current && !noHover ? "hover" : undefined} whileFocus={current && !noHover ? "hover" : undefined}
                 whileTap={locked ? { x: [0, -5, 5, -3, 3, 0], transition: { duration: 0.45, ease: "easeInOut" } } : { scale: 0.985, transition: tr(0.2) }}
                 onClick={() => (locked ? onLocked(s.id) : onOpen(s.id))}
                 aria-disabled={locked || undefined}
