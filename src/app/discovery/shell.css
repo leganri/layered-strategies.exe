@@ -2001,3 +2001,22 @@
     background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/><feColorMatrix type='matrix' values='0 0 0 0 0.16  0 0 0 0 0.15  0 0 0 0 0.14  -2.4 0 0 0 1.25'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>"); }
 }
 
+/* Short, wide screens (a phone turned sideways, ~930x430): too wide for the phone deck, too short for the
+   one-screen 4x3 grid, whose cards get crushed until their art is clipped. Keep the four columns, give each
+   card a real height, and let the home grid scroll inside the frame. Pad clear of the notch / home bar. */
+@media (min-width: 881px) and (max-height: 600px) {
+  /* pinned to the visible screen like the phone layout: base .root's min-height:100vh reaches under Safari's
+     toolbar on iPhone and let the whole page scroll. Only the frame body scrolls. iOS also inflates text in
+     landscape unless told not to, which pushed the window wider than the screen. */
+  html, body { overflow: hidden; overscroll-behavior: none; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+  .root, .root.canvas { min-height: 0; }
+  .root.canvas { position: fixed; top: 0; right: 0; bottom: 0; left: 0; height: auto; overflow: hidden;
+    padding: max(8px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left)); }
+  .root.canvas > .frame { min-height: 0; }
+  .root.canvas .frame > .topbar { height: 52px; }
+  .frame-body { overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+  .frame-body > .home-view { flex: 1 0 auto; }
+  .home-view .hub { flex: 1 0 auto; min-height: auto; padding: 12px 12px 16px; }
+  .hub-grid { flex: none; grid-template-rows: none; grid-auto-rows: 176px; gap: 10px; }
+  .tester, .tester.show { display: none; }
+}
